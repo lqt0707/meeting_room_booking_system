@@ -45,6 +45,9 @@ src/.env
 .env.production.local
 .env.local
 
+# 例外：允许提交模板文件
+!.env.example
+
 # temp directory
 .temp
 .tmp

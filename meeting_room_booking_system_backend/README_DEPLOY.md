@@ -8,7 +8,7 @@
 ### 1. 复制配置文件
 ```bash
 cd /Users/lqt/Desktop/nest/meeting_room_booking_system/meeting_room_booking_system_backend
-cp .env.docker .env
+cp .env.example .env
 ```
 
 ### 2. 修改.env文件（只改这5个地方）
@@ -60,7 +60,7 @@ docker-compose logs -f
 3. 确认网络连通性
 
 ## 🎯 一句话总结
-**记住：复制.env.docker → 改.env → ./deploy.sh → 完成！**
+**记住：复制.env.example → 改.env → ./deploy.sh → 完成！**
 
 ---
 **其他文档不用看，就按这个三步走！**

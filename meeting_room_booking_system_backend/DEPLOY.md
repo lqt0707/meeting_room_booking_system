@@ -92,7 +92,7 @@ git clone your-repository-url
 cd meeting_room_booking_system_backend
 
 # 创建环境变量文件
-cp .env.docker .env
+cp .env.example .env
 
 # 编辑.env文件
 nano .env

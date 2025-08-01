@@ -80,7 +80,7 @@ fi
 echo ""
 echo "🎯 安全建议:"
 echo "1. 确保所有.env文件都在.gitignore中"
-echo "2. 使用模板文件(.env.docker)代替真实配置"
+echo "2. 使用模板文件(.env.example)代替真实配置"
 echo "3. 提交前运行: git status 检查文件列表"
 echo "4. 如有敏感文件，执行: rm src/.env 删除"
 echo ""

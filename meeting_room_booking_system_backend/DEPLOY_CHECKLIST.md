@@ -5,7 +5,7 @@
 ### 第1步：复制配置文件
 ```bash
 cd /Users/lqt/Desktop/nest/meeting_room_booking_system/meeting_room_booking_system_backend
-cp .env.docker .env
+cp .env.example .env
 ```
 
 ### 第2步：编辑.env文件
