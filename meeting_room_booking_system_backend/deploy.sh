@@ -30,19 +30,20 @@ fi
 
 # 检查.env文件是否存在
 if [ ! -f .env ]; then
-    echo -e "${YELLOW}警告: 未找到.env文件，将使用.env.docker模板${NC}"
-    if [ ! -f .env.docker ]; then
-        echo -e "${RED}错误: 未找到.env.docker模板文件${NC}"
+    echo -e "${YELLOW}警告: 未找到.env文件，将使用.env.example模板${NC}"
+    if [ ! -f .env.example ]; then
+        echo -e "${RED}错误: 未找到.env.example模板文件${NC}"
         exit 1
     fi
-    cp .env.docker .env
+    cp .env.example .env
     echo -e "${YELLOW}请编辑.env文件填入实际配置后再运行此脚本${NC}"
     exit 1
 fi
 
-# 停止并删除旧容器
-echo -e "${GREEN}清理旧容器...${NC}"
-docker-compose down
+# 停止并删除当前项目的旧容器（不影响其他容器）
+echo -e "${GREEN}清理当前项目的旧容器...${NC}"
+docker-compose stop meeting-room-backend wait-for-db 2>/dev/null || true
+docker-compose rm -f meeting-room-backend wait-for-db 2>/dev/null || true
 
 # 构建镜像
 echo -e "${GREEN}构建Docker镜像...${NC}"

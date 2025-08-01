@@ -11,40 +11,40 @@ services:
       - "3005:3005"
     environment:
       # 数据库配置 - 连接到外部数据库
-      - mysql_host=${MYSQL_HOST:-localhost}
-      - mysql_port=${MYSQL_PORT:-3306}
-      - mysql_user=${MYSQL_USER:-root}
-      - mysql_password=${MYSQL_PASSWORD}
-      - mysql_database=${MYSQL_DATABASE:-meeting_room_booking_system}
-      - mysql_logging=${MYSQL_LOGGING:-true}
-      - mysql_pool_size=${MYSQL_POOL_SIZE:-10}
-      - mysql_synchronize=${MYSQL_SYNCHRONIZE:-true}
-      - mysql_connect_timeout=${MYSQL_CONNECT_TIMEOUT:-60000}
-      - mysql_acquire_timeout=${MYSQL_ACQUIRE_TIMEOUT:-60000}
-      - mysql_idle_timeout=${MYSQL_IDLE_TIMEOUT:-300000}
+      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-meeting_room_booking_system}
+      - MYSQL_LOGGING=${MYSQL_LOGGING:-true}
+      - MYSQL_POOL_SIZE=${MYSQL_POOL_SIZE:-10}
+      - MYSQL_SYNCHRONIZE=${MYSQL_SYNCHRONIZE:-true}
+      - MYSQL_CONNECT_TIMEOUT=${MYSQL_CONNECT_TIMEOUT:-60000}
+      - MYSQL_ACQUIRE_TIMEOUT=${MYSQL_ACQUIRE_TIMEOUT:-60000}
+      - MYSQL_IDLE_TIMEOUT=${MYSQL_IDLE_TIMEOUT:-300000}
       
       # Redis配置 - 连接到外部Redis
-      - redis_server_host=${REDIS_HOST:-localhost}
-      - redis_server_port=${REDIS_PORT:-6379}
-      - redis_server_password=${REDIS_PASSWORD}
-      - redis_server_db=${REDIS_DB:-0}
+      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-0}
       
       # JWT配置
-      - jwt_secret=${JWT_SECRET}
-      - jwt_access_token_expires_time=${JWT_ACCESS_TOKEN_EXPIRES:-30m}
-      - jwt_refresh_token_expires_time=${JWT_REFRESH_TOKEN_EXPIRES:-7d}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_TOKEN_EXPIRES_TIME=${JWT_ACCESS_TOKEN_EXPIRES:-30m}
+      - JWT_REFRESH_TOKEN_EXPIRES_TIME=${JWT_REFRESH_TOKEN_EXPIRES:-7d}
       
       # 邮件配置
-      - email_host=${EMAIL_HOST:-smtp.qq.com}
-      - email_port=${EMAIL_PORT:-587}
-      - email_secure=${EMAIL_SECURE:-false}
-      - email_user=${EMAIL_USER}
-      - email_pass=${EMAIL_PASSWORD}
-      - email_from=${EMAIL_FROM}
-      - email_from_name=${EMAIL_FROM_NAME:-会议房间预订系统}
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.qq.com}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_SECURE=${EMAIL_SECURE:-false}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-会议房间预订系统}
       
       # Nest配置
-      - nest_port=${NEST_PORT:-3005}
+      - NEST_PORT=${NEST_PORT:-3005}
     networks:
       - meeting-room-network
     depends_on:

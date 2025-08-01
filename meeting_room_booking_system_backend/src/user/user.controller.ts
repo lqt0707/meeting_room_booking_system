@@ -127,7 +127,7 @@ export class UserController {
       },
       {
         expiresIn:
-          this.configService.get('jwt_access_token_expires_time') || '30m',
+          this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
       },
     );
     vo.refreshToken = this.jwtService.sign(
@@ -138,7 +138,7 @@ export class UserController {
       },
       {
         expiresIn:
-          this.configService.get('jwt_refresh_token_expires_time') || '7d',
+          this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
       },
     );
     return vo;
@@ -169,8 +169,7 @@ export class UserController {
         jti: Math.random().toString(36).substring(2, 15),
       },
       {
-        expiresIn:
-          this.configService.get('jwt_access_token_expires_time') || '30m',
+        expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
       },
     );
     vo.refreshToken = this.jwtService.sign(
@@ -180,8 +179,7 @@ export class UserController {
         jti: Math.random().toString(36).substring(2, 15),
       },
       {
-        expiresIn:
-          this.configService.get('jwt_refresh_token_expires_time') || '7d',
+        expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
       },
     );
     return vo;
@@ -221,8 +219,7 @@ export class UserController {
           jti: Math.random().toString(36).substring(2, 15),
         },
         {
-          expiresIn:
-            this.configService.get('jwt_access_token_expires_time') || '30m',
+          expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
         },
       );
 
@@ -233,8 +230,7 @@ export class UserController {
           jti: Math.random().toString(36).substring(2, 15),
         },
         {
-          expiresIn:
-            this.configService.get('jwt_refresh_token_expires_time') || '7d',
+          expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
         },
       );
 
@@ -281,8 +277,7 @@ export class UserController {
           jti: Math.random().toString(36).substring(2, 15),
         },
         {
-          expiresIn:
-            this.configService.get('jwt_access_token_expires_time') || '30m',
+          expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
         },
       );
 
@@ -293,8 +288,7 @@ export class UserController {
           jti: Math.random().toString(36).substring(2, 15),
         },
         {
-          expiresIn:
-            this.configService.get('jwt_refresh_token_expires_time') || '7d',
+          expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
         },
       );
 

@@ -21,9 +21,9 @@ import * as path from 'path';
       global: true,
       useFactory(configService: ConfigService) {
         return {
-          secret: configService.get('jwt_secret'),
+          secret: configService.get('JWT_SECRET'),
           signOptions: {
-            expiresIn: configService.get('jwt_access_token_expires_time'),
+            expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME'),
           },
         };
       },
@@ -38,23 +38,23 @@ import * as path from 'path';
       useFactory(configService: ConfigService) {
         return {
           type: 'mysql',
-          host: configService.get('mysql_host'),
-          port: configService.get('mysql_port'),
-          username: configService.get('mysql_user'),
-          password: configService.get('mysql_password'),
-          database: configService.get('mysql_database'),
-          logging: configService.get('mysql_logging') === 'true',
-          poolSize: configService.get('mysql_pool_size') || 10,
+          host: configService.get('MYSQL_HOST'),
+          port: configService.get('MYSQL_PORT'),
+          username: configService.get('MYSQL_USER'),
+          password: configService.get('MYSQL_PASSWORD'),
+          database: configService.get('MYSQL_DATABASE'),
+          logging: configService.get('MYSQL_LOGGING') === 'true',
+          poolSize: configService.get('MYSQL_POOL_SIZE') || 10,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: configService.get('mysql_synchronize') === 'true',
+          synchronize: configService.get('MYSQL_SYNCHRONIZE') === 'true',
           connectorPackage: 'mysql2',
           extra: {
             authPlugin: 'sha256_password',
-            connectTimeout: configService.get('mysql_connect_timeout') || 60000,
-            acquireTimeout: configService.get('mysql_acquire_timeout') || 60000,
+            connectTimeout: configService.get('MYSQL_CONNECT_TIMEOUT') || 60000,
+            acquireTimeout: configService.get('MYSQL_ACQUIRE_TIMEOUT') || 60000,
             timeout: 60000,
             reconnect: true,
-            idleTimeout: configService.get('mysql_idle_timeout') || 300000,
+            idleTimeout: configService.get('MYSQL_IDLE_TIMEOUT') || 300000,
             enableKeepAlive: true,
             keepAliveInitialDelay: 0,
           },

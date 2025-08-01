@@ -8,21 +8,21 @@ export class EmailService {
 
   constructor(private configService: ConfigService) {
     this.transporter = createTransport({
-      host: this.configService.get('email_host'),
-        port: this.configService.get('email_port'),
-        secure: this.configService.get('email_secure') === 'true',
-        auth: {
-          user: this.configService.get('email_user'),
-          pass: this.configService.get('email_pass'),
-        },
+      host: this.configService.get('EMAIL_HOST'),
+      port: this.configService.get('EMAIL_PORT'),
+      secure: this.configService.get('EMAIL_SECURE') === 'true',
+      auth: {
+        user: this.configService.get('EMAIL_USER'),
+        pass: this.configService.get('EMAIL_PASSWORD'),
+      },
     });
   }
 
   async sendMail({ to, subject, html }) {
     await this.transporter.sendMail({
       from: {
-        name: this.configService.get('email_from_name'),
-        address: this.configService.get('email_from'),
+        name: this.configService.get('EMAIL_FROM_NAME') || '会议房间预订系统',
+        address: this.configService.get('EMAIL_FROM') || 'noreply@meeting.com',
       },
       to,
       subject,

@@ -52,6 +52,4 @@ uploads
 # 开发配置
 .eslintrc.js
 .prettierrc
-tsconfig.json
-tsconfig.build.json
 jest.config.js
