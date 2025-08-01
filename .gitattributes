@@ -1,0 +1,32 @@
+# 防止敏感文件被GitHub索引
+.env export-ignore
+.env.local export-ignore
+.env.development.local export-ignore
+.env.test.local export-ignore
+.env.production.local export-ignore
+
+# 忽略上传文件
+uploads/ export-ignore
+*.tmp export-ignore
+*.temp export-ignore
+
+# 忽略日志文件
+*.log export-ignore
+logs/ export-ignore
+
+# 忽略构建输出
+dist/ export-ignore
+build/ export-ignore
+node_modules/ export-ignore
+
+# 忽略测试覆盖
+coverage/ export-ignore
+.nyc_output/ export-ignore
+
+# 忽略IDE配置
+.vscode/ export-ignore
+.idea/ export-ignore
+
+# 忽略操作系统文件
+.DS_Store export-ignore
+Thumbs.db export-ignore
