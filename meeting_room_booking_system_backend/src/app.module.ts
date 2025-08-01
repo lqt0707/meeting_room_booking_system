@@ -46,7 +46,7 @@ import * as path from 'path';
           logging: configService.get('MYSQL_LOGGING') === 'true',
           poolSize: configService.get('MYSQL_POOL_SIZE') || 10,
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: configService.get('MYSQL_SYNCHRONIZE') === 'true',
+          synchronize: configService.get('MYSQL_SYNCHRONIZE') === 'true' && process.env.NODE_ENV !== 'production',
           connectorPackage: 'mysql2',
           extra: {
             authPlugin: 'sha256_password',

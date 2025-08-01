@@ -54,40 +54,6 @@ services:
       retries: 2
       start_period: 30s
 
-  # 轻量级等待服务
-  wait-for-lite:
-    image: alpine:latest
-    container_name: wait-for-lite-services
-    command: |
-      sh -c "
-        echo '等待外部服务连接...'
-        
-        # 简化等待逻辑，减少资源占用
-        for i in 1 2 3 4 5; do
-          if nc -z ${MYSQL_HOST:-localhost} ${MYSQL_PORT:-3306}; then
-            echo 'MySQL已就绪'
-            break
-          fi
-          echo '等待MySQL...'
-          sleep 3
-        done
-        
-        # 检查远程Redis服务是否可访问
-        for i in 1 2 3 4 5; do
-          if nc -z ${REDIS_HOST:-remote-redis-host} ${REDIS_PORT:-6379}; then
-            echo 'Redis已就绪'
-            break
-          fi
-          echo '等待Redis...'
-          sleep 3
-        done
-        
-        echo '所有外部服务已就绪'
-        exit 0
-      "
-    networks:
-      - meeting-room-lite-network
-
 networks:
   meeting-room-lite-network:
     driver: bridge
