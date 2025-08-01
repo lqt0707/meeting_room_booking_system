@@ -8,7 +8,7 @@ services:
     container_name: meeting-room-backend-lite
     restart: unless-stopped
     ports:
-      - "3006:3005"  # 使用3006端口避免冲突
+      - "3005:3005"  # 使用3005端口
     environment:
       # 数据库配置
       - MYSQL_HOST=${MYSQL_HOST:-localhost}
@@ -24,7 +24,7 @@ services:
       - MYSQL_IDLE_TIMEOUT=${MYSQL_IDLE_TIMEOUT:-60000}
       
       # Redis配置
-      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_HOST=${REDIS_HOST:-remote-redis-host}
       - REDIS_PORT=${REDIS_PORT:-6379}
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_DB=${REDIS_DB:-1}  # 使用不同数据库避免冲突
@@ -72,8 +72,9 @@ services:
           sleep 3
         done
         
+        # 检查远程Redis服务是否可访问
         for i in 1 2 3 4 5; do
-          if nc -z ${REDIS_HOST:-localhost} ${REDIS_PORT:-6379}; then
+          if nc -z ${REDIS_HOST:-remote-redis-host} ${REDIS_PORT:-6379}; then
             echo 'Redis已就绪'
             break
           fi

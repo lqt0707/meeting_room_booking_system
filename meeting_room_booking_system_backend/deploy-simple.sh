@@ -1,70 +1,78 @@
 #!/bin/bash
 
-# 会议房间预订系统后端Docker部署脚本（简化版）
-# 解决段错误问题，使用直接Docker命令
+# 简化版会议房间预订系统后端部署脚本
+# 专为快速部署设计，不影响现有docker服务
 
 set -e
 
 # 颜色输出
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+color_red='\033[0;31m'
+color_green='\033[0;32m'
+color_yellow='\033[1;33m'
+color_reset='\033[0m'
 
-echo -e "${GREEN}开始简化部署会议房间预订系统后端...${NC}"
-
-# 检查Docker
+# 检查必要工具
+echo -e "${color_green}🔍 检查必要工具...${color_reset}"
 if ! command -v docker &> /dev/null; then
-    echo -e "${RED}错误: Docker未安装${NC}"
+    echo -e "${color_red}❌ Docker未安装，请先安装Docker${color_reset}"
     exit 1
 fi
 
-# 检查.env文件
-if [ ! -f .env ]; then
-    echo -e "${YELLOW}创建.env文件...${NC}"
+if ! docker compose version &> /dev/null; then
+    echo -e "${color_red}❌ Docker Compose未安装，请先安装Docker Compose${color_reset}"
+    exit 1
+fi
+
+# 检查端口是否被占用
+check_port_occupied() {
+    local port=$1
+    if lsof -Pi :$port -sTCP:LISTEN -t >/dev/null 2>&1; then
+        echo -e "${color_red}❌ 端口 $port 已被占用，请先释放端口${color_reset}"
+        exit 1
+    fi
+}
+
+# 检查3005端口是否被占用
+check_port_occupied 3005
+
+# 检查环境文件
+if [ ! -f ".env" ]; then
+    echo -e "${color_yellow}⚠️  未找到.env文件，将使用.env.example${color_reset}"
     cp .env.example .env
-    echo -e "${YELLOW}请编辑.env文件后重新运行${NC}"
+    echo -e "${color_yellow}⚠️  请编辑.env文件填入实际配置${color_reset}"
     exit 1
 fi
 
-# 手动停止容器（避免docker-compose段错误）
-echo -e "${GREEN}停止旧容器...${NC}"
-docker stop meeting-room-backend 2>/dev/null || true
-docker stop wait-for-db 2>/dev/null || true
-docker rm meeting-room-backend 2>/dev/null || true
-docker rm wait-for-db 2>/dev/null || true
+# 清理旧容器 (仅清理docker-compose-lite.yml中定义的容器)
+echo -e "${color_green}🧹 清理旧容器...${color_reset}"
+docker compose -f docker-compose-lite.yml down 2>/dev/null || true
 
-# 直接构建镜像
-echo -e "${GREEN}构建镜像...${NC}"
-docker build -t meeting-room-backend:latest .
+# 构建并启动服务
+echo -e "${color_green}🔨 构建Docker镜像...${color_reset}"
+docker compose -f docker-compose-lite.yml build --no-cache
 
-# 创建网络
-echo -e "${GREEN}创建网络...${NC}"
-docker network create meeting-room-network 2>/dev/null || true
+echo -e "${color_green}🚀 启动服务...${color_reset}"
+docker compose -f docker-compose-lite.yml up -d
 
-# 启动服务
-echo -e "${GREEN}启动服务...${NC}"
-docker run -d \
-    --name wait-for-db \
-    --network meeting-room-network \
-    alpine:latest \
-    sh -c "until nc -z mysql 3306 && nc -z redis 6379; do sleep 1; done"
-
-docker run -d \
-    --name meeting-room-backend \
-    --network meeting-room-network \
-    -p 3005:3005 \
-    --env-file .env \
-    meeting-room-backend:latest
-
-# 等待启动
+# 等待服务启动
+echo -e "${color_green}⏳ 等待服务启动...${color_reset}"
 sleep 10
 
-# 检查状态
-if docker ps | grep -q "meeting-room-backend"; then
-    echo -e "${GREEN}部署成功！访问: http://localhost:3005${NC}"
+# 检查服务状态
+if docker compose -f docker-compose-lite.yml ps | grep -q "Up"; then
+    echo -e "${color_green}✅ 服务启动成功！${color_reset}"
+    echo -e "${color_green}🌐 访问地址: http://服务器IP:3005${color_reset}"
+    echo -e "${color_green}🏥 健康检查: http://服务器IP:3005/health${color_reset}"
 else
-    echo -e "${RED}部署失败，查看日志: docker logs meeting-room-backend${NC}"
+    echo -e "${color_red}❌ 服务启动失败，请检查日志${color_reset}"
+    docker compose -f docker-compose-lite.yml logs
+    exit 1
 fi
 
-docker ps
+echo -e "${color_green}📋 容器状态:${color_reset}"
+docker compose -f docker-compose-lite.yml ps
+
+echo -e "${color_green}🎯 部署完成！${color_reset}"
+echo -e "${color_yellow}💡 管理命令:${color_reset}"
+echo "  查看日志: docker compose -f docker-compose-lite.yml logs -f"
+echo "  停止服务: docker compose -f docker-compose-lite.yml down"
