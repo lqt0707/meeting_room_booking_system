@@ -38,6 +38,6 @@ async function bootstrap() {
   app.enableCors();
 
   const configService = app.get(ConfigService);
-  await app.listen(configService.get('NEST_PORT') ?? 3000);
+  await app.listen(configService.get('NEST_PORT') ?? 3000, '0.0.0.0');
 }
 bootstrap();
