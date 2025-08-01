@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  meeting-room-backend-lite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: meeting-room-backend-lite
+    restart: unless-stopped
+    ports:
+      - "3006:3005"  # 使用3006端口避免冲突
+    environment:
+      # 数据库配置
+      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-meeting_room_booking_system}
+      - MYSQL_LOGGING=${MYSQL_LOGGING:-false}  # 轻量级关闭日志
+      - MYSQL_POOL_SIZE=${MYSQL_POOL_SIZE:-5}  # 减少连接池
+      - MYSQL_SYNCHRONIZE=${MYSQL_SYNCHRONIZE:-false}
+      - MYSQL_CONNECT_TIMEOUT=${MYSQL_CONNECT_TIMEOUT:-30000}
+      - MYSQL_ACQUIRE_TIMEOUT=${MYSQL_ACQUIRE_TIMEOUT:-30000}
+      - MYSQL_IDLE_TIMEOUT=${MYSQL_IDLE_TIMEOUT:-60000}
+      
+      # Redis配置
+      - REDIS_HOST=${REDIS_HOST:-localhost}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DB=${REDIS_DB:-1}  # 使用不同数据库避免冲突
+      
+      # JWT配置
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ACCESS_TOKEN_EXPIRES_TIME=${JWT_ACCESS_TOKEN_EXPIRES:-30m}
+      - JWT_REFRESH_TOKEN_EXPIRES_TIME=${JWT_REFRESH_TOKEN_EXPIRES:-7d}
+      
+      # 邮件配置
+      - EMAIL_HOST=${EMAIL_HOST:-smtp.qq.com}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_SECURE=${EMAIL_SECURE:-false}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - EMAIL_FROM_NAME=${EMAIL_FROM_NAME:-会议房间预订系统}
+      
+      # Nest配置
+      - NEST_PORT=${NEST_PORT:-3005}
+    networks:
+      - meeting-room-lite-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 60s  # 轻量级检查频率
+      timeout: 10s
+      retries: 2
+      start_period: 30s
+
+  # 轻量级等待服务
+  wait-for-lite:
+    image: alpine:latest
+    container_name: wait-for-lite-services
+    command: |
+      sh -c "
+        echo '等待外部服务连接...'
+        
+        # 简化等待逻辑，减少资源占用
+        for i in 1 2 3 4 5; do
+          if nc -z ${MYSQL_HOST:-localhost} ${MYSQL_PORT:-3306}; then
+            echo 'MySQL已就绪'
+            break
+          fi
+          echo '等待MySQL...'
+          sleep 3
+        done
+        
+        for i in 1 2 3 4 5; do
+          if nc -z ${REDIS_HOST:-localhost} ${REDIS_PORT:-6379}; then
+            echo 'Redis已就绪'
+            break
+          fi
+          echo '等待Redis...'
+          sleep 3
+        done
+        
+        echo '所有外部服务已就绪'
+        exit 0
+      "
+    networks:
+      - meeting-room-lite-network
+
+networks:
+  meeting-room-lite-network:
+    driver: bridge
+
+volumes:
+  meeting-room-lite-data:
