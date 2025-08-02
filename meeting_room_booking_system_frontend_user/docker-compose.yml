@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  frontend-user:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3000:80"
+    networks:
+      - meeting_room_booking_system_backend_meeting-room-lite-network
+
+networks:
+  meeting_room_booking_system_backend_meeting-room-lite-network:
+    external: true

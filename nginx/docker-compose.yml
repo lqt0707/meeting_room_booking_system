@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  nginx:
+    build:
+      context: ..
+      dockerfile: nginx.Dockerfile
+    ports:
+      - "127.0.0.1:80:80"
+    networks:
+      - nginx-network
+      - meeting_room_booking_system_backend_meeting-room-lite-network
+
+networks:
+  nginx-network:
+    driver: bridge
+  meeting_room_booking_system_backend_meeting-room-lite-network:
+    external: true

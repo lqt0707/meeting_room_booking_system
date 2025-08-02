@@ -1,0 +1,14 @@
+{
+  "name": "meeting_room_booking_system",
+  "version": "1.0.0",
+  "description": "会议房间预订系统",
+  "scripts": {
+    "deploy:local": "echo '🚀 开始部署所有服务...' && bash deploy-all.sh",
+    "deploy:local:backend": "cd meeting_room_booking_system_backend && npm run deploy:local",
+    "deploy:local:frontend-admin": "cd meeting_room_booking_system_frontend_admin && npm run deploy:local",
+    "deploy:local:frontend-user": "cd meeting_room_booking_system_frontend_user && npm run deploy:local",
+    "deploy:local:nginx": "cd nginx && npm run deploy:local"
+  },
+  "author": "",
+  "license": "ISC"
+}

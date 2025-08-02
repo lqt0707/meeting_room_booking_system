@@ -68,7 +68,9 @@ const routes = [
     element: <Login />,
   }
 ];
-export const router = createBrowserRouter(routes);
+export const router = createBrowserRouter(routes, {
+  basename: '/admin'
+});
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement

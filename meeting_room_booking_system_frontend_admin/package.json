@@ -2,6 +2,7 @@
   "name": "meeting_room_booking_system_frontend_admain",
   "version": "0.1.0",
   "private": true,
+  "homepage": "/admin",
   "dependencies": {
     "@ant-design/icons": "^5.2.6",
     "@testing-library/jest-dom": "^5.17.0",
@@ -26,7 +27,13 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "docker-compose up -d",
+    "deploy:build": "docker-compose build --no-cache",
+    "deploy:down": "docker-compose down",
+    "deploy:logs": "docker-compose logs -f",
+    "deploy:status": "docker-compose ps",
+    "deploy:local": "bash deploy.sh"
   },
   "eslintConfig": {
     "extends": [

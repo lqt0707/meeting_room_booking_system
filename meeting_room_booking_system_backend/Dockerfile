@@ -19,6 +19,9 @@ RUN npm run build
 # 移除devDependencies减少镜像大小
 RUN npm prune --production
 
+# 安装curl用于健康检查
+RUN apk add --no-cache curl
+
 # 创建非root用户运行应用
 RUN addgroup -g 1001 -S nodejs
 RUN adduser -S nestjs -u 1001

@@ -19,7 +19,13 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "deploy": "docker-compose -f docker-compose-lite.yml up -d",
+    "deploy:build": "docker-compose -f docker-compose-lite.yml build --no-cache",
+    "deploy:down": "docker-compose -f docker-compose-lite.yml down",
+    "deploy:logs": "docker-compose -f docker-compose-lite.yml logs -f",
+    "deploy:status": "docker compose -f docker-compose-lite.yml ps",
+    "deploy:local": "bash deploy.sh"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -1,0 +1,15 @@
+{
+  "name": "meeting_room_booking_system_nginx",
+  "version": "1.0.0",
+  "description": "会议房间预订系统Nginx代理",
+  "scripts": {
+    "deploy:local": "bash deploy.sh",
+    "deploy": "docker-compose up -d",
+    "deploy:build": "docker-compose build --no-cache",
+    "deploy:down": "docker-compose down",
+    "deploy:logs": "docker-compose logs -f",
+    "deploy:status": "docker-compose ps"
+  },
+  "author": "",
+  "license": "ISC"
+}
