@@ -1,0 +1,76 @@
+version: "3.8"
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: ./meeting_room_booking_system_backend
+      dockerfile: Dockerfile
+    container_name: meeting-room-backend
+    ports:
+      - "3005:3005"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./meeting_room_booking_system_backend/.env:/app/.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 用户前端服务
+  frontend-user:
+    build:
+      context: ./meeting_room_booking_system_frontend_user
+      dockerfile: Dockerfile
+    container_name: meeting-room-frontend-user
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 管理前端服务
+  frontend-admin:
+    build:
+      context: ./meeting_room_booking_system_frontend_admin
+      dockerfile: Dockerfile
+    container_name: meeting-room-frontend-admin
+    ports:
+      - "3001:80"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx代理服务
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    container_name: meeting-room-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend-user
+      - frontend-admin
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  default:
+    name: meeting-room-network
+    driver: bridge
