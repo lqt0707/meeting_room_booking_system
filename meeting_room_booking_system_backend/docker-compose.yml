@@ -43,6 +43,8 @@ services:
       MYSQL_DATABASE: meeting_room_booking_system
       MYSQL_ROOT_PASSWORD: lqt
     restart: always
+    ports:
+      - 3306:3306
     networks:
       - common-network
   redis-container:
@@ -50,6 +52,8 @@ services:
     volumes:
       - /Users/lqt/redis-data:/data
     restart: always
+    ports:
+      - 6379:6379
     networks:
       - common-network
   minio-container:
