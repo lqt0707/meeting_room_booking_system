@@ -1,95 +1,90 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinTable,
-  ManyToMany,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-import { Role } from './role.entity';
+import { Column, CreateDateColumn, Entity, JoinTable, ManyToMany, PrimaryGeneratedColumn, Unique, UpdateDateColumn } from "typeorm";
+import { Role } from "./role.entity";
 
 @Entity({
-  name: 'users',
+    name: 'users'
 })
 export class User {
-  @PrimaryGeneratedColumn()
-  id: number;
 
-  @Column({
-    length: 50,
-    comment: '用户名',
-    unique: true,
-  })
-  username: string;
+    @PrimaryGeneratedColumn()
+    id: number;
 
-  @Column({
-    length: 50,
-    comment: '密码',
-  })
-  password: string;
+    @Column({
+        length: 50,
+        comment: '用户名',
+        unique: true
+    })
+    username: string;
 
-  @Column({
-    name: 'nick_name',
-    length: 50,
-    comment: '昵称',
-  })
-  nickName: string;
+    @Column({
+        length: 50,
+        comment: '密码'
+    })
+    password: string;
 
-  @Column({
-    comment: '邮箱',
-    length: 50,
-  })
-  email: string;
+    @Column({
+        name: 'nick_name',
+        length: 50,
+        comment: '昵称'
+    })
+    nickName: string;
 
-  @Column({
-    comment: '头像',
-    length: 100,
-    nullable: true,
-  })
-  headPic: string;
 
-  @Column({
-    comment: '手机号',
-    length: 20,
-    nullable: true,
-  })
-  phoneNumber: string;
+    @Column({
+        comment: '邮箱',
+        length: 50
+    })
+    email: string;
 
-  @Column({
-    comment: '是否冻结',
-    default: false,
-  })
-  isFrozen: boolean;
 
-  @Column({
-    comment: '是否是管理员',
-    default: false,
-  })
-  isAdmin: boolean;
+    @Column({
+        comment: '头像',
+        length: 100,
+        nullable: true
+    })
+    headPic: string;
 
-  @CreateDateColumn()
-  createTime: Date;
+    @Column({
+        comment: '手机号',
+        length: 20,
+        nullable: true
+    })
+    phoneNumber: string;
 
-  @UpdateDateColumn()
-  updateTime: Date;
+    @Column({
+        comment: '是否冻结',
+        default: false
+    })
+    isFrozen: boolean;
 
-  @ManyToMany(() => Role)
-  @JoinTable({
-    name: 'user_roles',
-  })
-  roles: Role[];
+    @Column({
+        comment: '是否是管理员',
+        default: false
+    })
+    isAdmin: boolean;
 
-  @Column({
-    type: 'int',
-    comment: '登录类型, 0 用户名密码登录, 1 Google 登录, 2 Github 登录',
-    default: 0,
-  })
-  loginType: LoginType;
+    @CreateDateColumn()
+    createTime: Date;
+
+    @UpdateDateColumn()
+    updateTime: Date;
+
+    @ManyToMany(() => Role)
+    @JoinTable({
+        name: 'user_roles'
+    })
+    roles: Role[] 
+
+    @Column({
+        type: 'int',
+        comment: '登录类型, 0 用户名密码登录, 1 Google 登录, 2 Github 登录',
+        default: 0
+    })
+    loginType: LoginType;
 }
 
 export enum LoginType {
-  USERNAME_PASSWORD = 0,
-  GOOGLE = 1,
-  GITHUB = 2,
+    USERNAME_PASSWORD = 0,
+    GOOGLE = 1,
+    GITHUB = 2
 }

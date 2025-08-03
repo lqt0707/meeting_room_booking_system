@@ -23,74 +23,50 @@ export function UpdateInfo() {
     const [form] = useForm();
 
     const onFinish = async (values: UserInfo) => {
-        try {
-            const res = await updateInfo(values);
-        
-            if(res.status === 201 || res.status === 200) {
-                const { message: msg, data} = res.data;
-                if(msg === 'success') {
-                    message.success('用户信息更新成功');
+        const res = await updateInfo(values);
+    
+        if(res.status === 201 || res.status === 200) {
+            const { message: msg, data} = res.data;
+            if(msg === 'success') {
+                message.success('用户信息更新成功');
 
-                    const userInfo = localStorage.getItem('user_info');
-                    if(userInfo) {
-                        const info = JSON.parse(userInfo);
-                        info.headPic = values.headPic;
-                        info.nickName = values.nickName;
+                const userInfo = localStorage.getItem('user_info');
+                if(userInfo) {
+                    const info = JSON.parse(userInfo);
+                    info.headPic = values.headPic;
+                    info.nickName = values.nickName;
 
-                        localStorage.setItem('user_info', JSON.stringify(info));
-                    }
-
-                } else {
-                    message.error(data);
+                    localStorage.setItem('user_info', JSON.stringify(info));
                 }
+
             } else {
-                message.error(res.data?.data || '系统繁忙，请稍后再试');
+                message.error(data);
             }
-        } catch (error: any) {
-            if (error.response && error.response.data) {
-                message.error(error.response.data.message || error.response.data.data || '信息更新失败');
-            } else {
-                message.error('网络连接失败，请检查网络');
-            }
+        } else {
+            message.error(res.data?.data || '系统繁忙，请稍后再试');
         }
     }
 
     const sendCaptcha = async function () {
-        try {
-            const res = await updateUserInfoCaptcha();
-            if(res.status === 201 || res.status === 200) {
-                message.success(res.data.data);
-            } else {
-                message.error('系统繁忙，请稍后再试');
-            }
-        } catch (error: any) {
-            if (error.response && error.response.data) {
-                message.error(error.response.data.message || error.response.data.data || '发送验证码失败');
-            } else {
-                message.error('网络连接失败，请检查网络');
-            }
+        const res = await updateUserInfoCaptcha();
+        if(res.status === 201 || res.status === 200) {
+            message.success(res.data.data);
+        } else {
+            message.error('系统繁忙，请稍后再试');
         }
     }
 
     useEffect(() => {
         async function query() {
-            try {
-                const res = await getUserInfo();
+            const res = await getUserInfo();
 
-                const { data } = res.data;
+            const { data } = res.data;
 
-                if(res.status === 201 || res.status === 200) {
-                    
-                    form.setFieldValue('headPic', data.headPic);
-                    form.setFieldValue('nickName', data.nickName);
-                    form.setFieldValue('email', data.email);
-                }
-            } catch (error: any) {
-                if (error.response && error.response.data) {
-                    message.error(error.response.data.message || '获取用户信息失败');
-                } else {
-                    message.error('网络连接失败，请检查网络');
-                }
+            if(res.status === 201 || res.status === 200) {
+                
+                form.setFieldValue('headPic', data.headPic);
+                form.setFieldValue('nickName', data.nickName);
+                form.setFieldValue('email', data.email);
             }
         }
         query();

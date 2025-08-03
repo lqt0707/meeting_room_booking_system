@@ -1,205 +1,178 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  DefaultValuePipe,
-  Get,
-  HttpStatus,
-  Inject,
-  Post,
-  Query,
-  UnauthorizedException,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
-import { UserService } from './user.service';
-import { RegisterUserDto } from './dto/register-user.dto';
+import { ConfigService } from '@nestjs/config';
+import { BadRequestException, Body, Controller, DefaultValuePipe, Get, HttpException, HttpStatus, Inject, ParseIntPipe, Post, Query, Req, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { EmailService } from 'src/email/email.service';
 import { RedisService } from 'src/redis/redis.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
-import { RequireLogin, UserInfo } from 'src/common/decorators/custom.decorator';
+import { RegisterUserDto } from './dto/register-user.dto';
+import { UserService } from './user.service';
+import { UnauthorizedException } from '@nestjs/common';
+import { RequireLogin, UserInfo } from 'src/custom.decorator';
 import { UserDetailVo } from './vo/user-info.vo';
 import { UpdateUserPasswordDto } from './dto/update-user-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { generateParseIntPipe } from 'src/common/utils/utils';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { generateParseIntPipe } from 'src/utils';
+import { ApiBearerAuth, ApiBody, ApiProperty, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { LoginUserVo } from './vo/login-user.vo';
 import { RefreshTokenVo } from './vo/refresh-token.vo';
 import { UserListVo } from './vo/user-list.vo';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as path from 'path';
-import { storage } from 'src/common/utils/my-file-storage';
+import { storage } from 'src/my-file-storage';
+import { AuthGuard } from '@nestjs/passport';
+import { Request, Response } from 'express';
 
 @ApiTags('用户管理模块')
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
-
+  
   @Inject(EmailService)
-  private readonly emailService: EmailService;
+  private emailService: EmailService;
 
   @Inject(RedisService)
-  private readonly redisService: RedisService;
+  private redisService: RedisService;
 
-  @Inject(JwtService)
-  private readonly jwtService: JwtService;
+  @ApiQuery({
+    name: 'address',
+    type: String,
+    description: '邮箱地址',
+    required: true,
+    example: 'xxx@xx.com'
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: '发送成功',
+    type: String
+  })
+  @Get('register-captcha')
+  async captcha(@Query('address') address: string) {
+    const code = Math.random().toString().slice(2,8);
 
-  @Inject(ConfigService)
-  private readonly configService: ConfigService;
+    await this.redisService.set(`captcha_${address}`, code, 5 * 60);
 
-  @ApiBody({ type: RegisterUserDto })
+    await this.emailService.sendMail({
+      to: address,
+      subject: '注册验证码',
+      html: `<p>你的注册验证码是 ${code}</p>`
+    });
+    return '发送成功';
+  }
+
+  @ApiBody({type: RegisterUserDto})
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: '验证码已失效/验证码错误/用户名已存在',
-    type: String,
+    description: '验证码已失效/验证码不正确/用户已存在',
+    type: String
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '注册成功/失败',
-    type: String,
+    type: String
   })
   @Post('register')
   async register(@Body() registerUser: RegisterUserDto) {
     return await this.userService.register(registerUser);
   }
 
-  @ApiQuery({
-    name: 'address',
-    description: '邮箱地址',
-    example: '123@qq.com',
-    type: String,
-    required: true,
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: '发送成功',
-    type: String,
-  })
-  @Get('register-captcha')
-  async getRegisterCaptcha(@Query('address') address: string) {
-    const code = Math.random().toString().slice(2, 8);
-    await this.redisService.set(`captcha_${address}`, code, 60 * 5);
-    await this.emailService.sendMail({
-      to: address,
-      subject: '注册验证码',
-      html: `<p>您的注册验证码为：${code}</p>`,
-    });
-    return '验证码已发送';
-  }
-
-  @Get('init-data')
+  @Get("init-data") 
   async initData() {
     await this.userService.initData();
-    return '初始化数据成功';
+    return 'done';
   }
 
-  @ApiBody({ type: LoginUserDto })
+  @Inject(JwtService)
+  private jwtService: JwtService;
+
+  @Inject(ConfigService)
+  private configService: ConfigService;
+
+  @ApiBody({
+    type: LoginUserDto
+  })
   @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: '用户名不存在/密码错误',
-    type: String,
+    status: HttpStatus.BAD_REQUEST,
+    description: '用户不存在/密码错误',
+    type: String
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: '用户信息和token',
-    type: LoginUserVo,
+    description: '用户信息和 token',
+    type: LoginUserVo
   })
+  @UseGuards(AuthGuard('local'))
   @Post('login')
-  async userLogin(@Body() loginUser: LoginUserDto) {
-    const vo: LoginUserVo = await this.userService.login(loginUser, false);
-    vo.accessToken = this.jwtService.sign(
-      {
-        userId: vo.userInfo.id,
-        username: vo.userInfo.username,
-        email: vo.userInfo.email,
-        roles: vo.userInfo.roles,
-        permissions: vo.userInfo.permissions,
-        iat: Date.now(),
-        jti: Math.random().toString(36).substring(2, 15),
-      },
-      {
-        expiresIn:
-          this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
-      },
-    );
-    vo.refreshToken = this.jwtService.sign(
-      {
-        userId: vo.userInfo.id,
-        iat: Date.now(),
-        jti: Math.random().toString(36).substring(2, 15),
-      },
-      {
-        expiresIn:
-          this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
-      },
-    );
+  async userLogin(@UserInfo() vo: LoginUserVo) {
+    vo.accessToken = this.jwtService.sign({
+      userId: vo.userInfo.id,
+      username: vo.userInfo.username,
+      email: vo.userInfo.email,
+      roles: vo.userInfo.roles,
+      permissions: vo.userInfo.permissions
+    }, {
+      expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+    });
+
+    vo.refreshToken = this.jwtService.sign({
+      userId: vo.userInfo.id
+    }, {
+      expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+    });
+
     return vo;
   }
 
-  @ApiBody({ type: LoginUserDto })
+  @ApiBody({
+    type: LoginUserDto
+  })
   @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: '用户名不存在/密码错误',
-    type: String,
+    status: HttpStatus.BAD_REQUEST,
+    description: '用户不存在/密码错误',
+    type: String
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: '用户信息和token',
-    type: LoginUserVo,
+    description: '用户信息和 token',
+    type: LoginUserVo
   })
   @Post('admin/login')
   async adminLogin(@Body() loginUser: LoginUserDto) {
     const vo = await this.userService.login(loginUser, true);
-    vo.accessToken = this.jwtService.sign(
-      {
-        userId: vo.userInfo.id,
-        username: vo.userInfo.username,
-        email: vo.userInfo.email,
-        roles: vo.userInfo.roles,
-        permissions: vo.userInfo.permissions,
-        iat: Date.now(),
-        jti: Math.random().toString(36).substring(2, 15),
-      },
-      {
-        expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
-      },
-    );
-    vo.refreshToken = this.jwtService.sign(
-      {
-        userId: vo.userInfo.id,
-        iat: Date.now(),
-        jti: Math.random().toString(36).substring(2, 15),
-      },
-      {
-        expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
-      },
-    );
+    
+    vo.accessToken = this.jwtService.sign({
+      userId: vo.userInfo.id,
+      username: vo.userInfo.username,
+      email: vo.userInfo.email,
+      roles: vo.userInfo.roles,
+      permissions: vo.userInfo.permissions
+    }, {
+      expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+    });
+
+    vo.refreshToken = this.jwtService.sign({
+      userId: vo.userInfo.id
+    }, {
+      expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+    });
+
     return vo;
   }
 
   @ApiQuery({
     name: 'refreshToken',
-    description: '刷新token',
-    example: 'xxxxxx',
     type: String,
+    description: '刷新 token',
     required: true,
+    example: 'xxxxxxxxyyyyyyyyzzzzz'
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'token 已失效，请重新登录',
+    description: 'token 已失效，请重新登录'
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '刷新成功',
-    type: RefreshTokenVo,
+    type: RefreshTokenVo
   })
   @Get('refresh')
   async refresh(@Query('refreshToken') refreshToken: string) {
@@ -208,57 +181,149 @@ export class UserController {
 
       const user = await this.userService.findUserById(data.userId, false);
 
-      const access_token = this.jwtService.sign(
-        {
-          userId: user.id,
-          username: user.username,
-          email: user.email,
-          roles: user.roles,
-          permissions: user.permissions,
-          iat: Date.now(),
-          jti: Math.random().toString(36).substring(2, 15),
-        },
-        {
-          expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
-        },
-      );
+      const access_token = this.jwtService.sign({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        roles: user.roles,
+        permissions: user.permissions
+      }, {
+        expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+      });
 
-      const refresh_token = this.jwtService.sign(
-        {
-          userId: user.id,
-          iat: Date.now(),
-          jti: Math.random().toString(36).substring(2, 15),
-        },
-        {
-          expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
-        },
-      );
+      const refresh_token = this.jwtService.sign({
+        userId: user.id
+      }, {
+        expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+      });
 
       const vo = new RefreshTokenVo();
+
       vo.access_token = access_token;
       vo.refresh_token = refresh_token;
 
       return vo;
-    } catch (error) {
+    } catch(e) {
       throw new UnauthorizedException('token 已失效，请重新登录');
     }
   }
 
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {}
+
+  @Get('callback/google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthRedirect(@Req() req, @Res() res: Response) {
+    if (!req.user) {
+      throw new BadRequestException('google 登录失败');
+    }
+
+    const foundUser = await this.userService.findUserByEmail(req.user.email);
+
+    if(foundUser) {
+      const vo = new LoginUserVo();
+      vo.userInfo = {
+          id: foundUser.id,
+          username: foundUser.username,
+          nickName: foundUser.nickName,
+          email: foundUser.email,
+          phoneNumber: foundUser.phoneNumber,
+          headPic: foundUser.headPic,
+          createTime: foundUser.createTime.getTime(),
+          isFrozen: foundUser.isFrozen,
+          isAdmin: foundUser.isAdmin,
+          roles: foundUser.roles.map(item => item.name),
+          permissions: foundUser.roles.reduce((arr, item) => {
+              item.permissions.forEach(permission => {
+                  if(arr.indexOf(permission) === -1) {
+                      arr.push(permission);
+                  }
+              })
+              return arr;
+          }, [])
+      }
+      vo.accessToken = this.jwtService.sign({
+        userId: vo.userInfo.id,
+        username: vo.userInfo.username,
+        email: vo.userInfo.email,
+        roles: vo.userInfo.roles,
+        permissions: vo.userInfo.permissions
+      }, {
+        expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+      });
+  
+      vo.refreshToken = this.jwtService.sign({
+        userId: vo.userInfo.id
+      }, {
+        expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+      });
+    
+      res.cookie('userInfo', JSON.stringify(vo.userInfo));
+      res.cookie('accessToken', vo.accessToken);
+      res.cookie('refreshToken', vo.refreshToken);
+      
+    } else {
+      const user = await this.userService.registerByGoogleInfo(
+        req.user.email, 
+        req.user.firstName + ' ' + req.user.lastName,
+        req.user.picture
+      );
+  
+      const vo = new LoginUserVo();
+      vo.userInfo = {
+          id: user.id,
+          username: user.username,
+          nickName: user.nickName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          headPic: user.headPic,
+          createTime: user.createTime.getTime(),
+          isFrozen: user.isFrozen,
+          isAdmin: user.isAdmin,
+          roles: [],
+          permissions: []
+      }
+  
+      vo.accessToken = this.jwtService.sign({
+        userId: vo.userInfo.id,
+        username: vo.userInfo.username,
+        email: vo.userInfo.email,
+        roles: vo.userInfo.roles,
+        permissions: vo.userInfo.permissions
+      }, {
+        expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+      });
+  
+      vo.refreshToken = this.jwtService.sign({
+        userId: vo.userInfo.id
+      }, {
+        expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+      });
+    
+      res.cookie('userInfo', JSON.stringify(vo.userInfo));
+      res.cookie('accessToken', vo.accessToken);
+      res.cookie('refreshToken', vo.refreshToken);
+    }
+
+    res.redirect('http://localhost:3000/');
+  }
+
   @ApiQuery({
-    name: 'adminRefreshToken',
-    description: '刷新管理员token',
-    example: 'xxxxxx',
+    name: 'refreshToken',
     type: String,
+    description: '刷新 token',
     required: true,
+    example: 'xxxxxxxxyyyyyyyyzzzzz'
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'token 已失效，请重新登录',
+    description: 'token 已失效，请重新登录'
   })
   @ApiResponse({
     status: HttpStatus.OK,
     description: '刷新成功',
-    type: RefreshTokenVo,
+    type: RefreshTokenVo
   })
   @Get('admin/refresh')
   async adminRefresh(@Query('refreshToken') refreshToken: string) {
@@ -267,37 +332,29 @@ export class UserController {
 
       const user = await this.userService.findUserById(data.userId, true);
 
-      const access_token = this.jwtService.sign(
-        {
-          userId: user.id,
-          username: user.username,
-          roles: user.roles,
-          permissions: user.permissions,
-          iat: Date.now(),
-          jti: Math.random().toString(36).substring(2, 15),
-        },
-        {
-          expiresIn: this.configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME') || '30m',
-        },
-      );
+      const access_token = this.jwtService.sign({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        roles: user.roles,
+        permissions: user.permissions
+      }, {
+        expiresIn: this.configService.get('jwt_access_token_expires_time') || '30m'
+      });
 
-      const refresh_token = this.jwtService.sign(
-        {
-          userId: user.id,
-          iat: Date.now(),
-          jti: Math.random().toString(36).substring(2, 15),
-        },
-        {
-          expiresIn: this.configService.get('JWT_REFRESH_TOKEN_EXPIRES_TIME') || '7d',
-        },
-      );
+      const refresh_token = this.jwtService.sign({
+        userId: user.id
+      }, {
+        expiresIn: this.configService.get('jwt_refresh_token_expres_time') || '7d'
+      });
 
       const vo = new RefreshTokenVo();
+
       vo.access_token = access_token;
       vo.refresh_token = refresh_token;
 
       return vo;
-    } catch (error) {
+    } catch(e) {
       throw new UnauthorizedException('token 已失效，请重新登录');
     }
   }
@@ -305,211 +362,189 @@ export class UserController {
   @ApiBearerAuth()
   @ApiResponse({
     status: HttpStatus.OK,
-    description: '用户信息',
-    type: UserDetailVo,
+    description: 'success',
+    type: UserDetailVo
   })
   @Get('info')
   @RequireLogin()
-  async getUserInfo(@UserInfo('userId') userId: number) {
-    const user = await this.userService.findUserDetailById(userId);
-    if (!user) {
-      throw new UnauthorizedException('用户不存在');
-    }
-    const vo = new UserDetailVo();
-    vo.id = user.id;
-    vo.username = user.username;
-    vo.nickName = user.nickName || '';
-    vo.email = user.email;
-    vo.headPic = user.headPic || '';
-    vo.phoneNumber = user.phoneNumber || '';
-    vo.isFrozen = user.isFrozen || false;
-    vo.createTime = user.createTime;
-    return vo;
+  async info(@UserInfo('userId') userId: number) {
+      const user = await this.userService.findUserDetailById(userId);
+
+      const vo = new UserDetailVo();
+      vo.id = user.id;
+      vo.email = user.email;
+      vo.username = user.username;
+      vo.headPic = user.headPic;
+      vo.phoneNumber = user.phoneNumber;
+      vo.nickName = user.nickName;
+      vo.createTime = user.createTime;
+      vo.isFrozen = user.isFrozen;
+
+      return vo;
   }
 
   @ApiBody({
-    type: UpdateUserPasswordDto,
+    type: UpdateUserPasswordDto
   })
   @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: '验证码已失效/不正确/用户名不存在',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: '密码更新成功/失败',
+    type: String,
+    description: '验证码已失效/不正确'
   })
   @Post(['update_password', 'admin/update_password'])
-  async updatePassword(@Body() updatePasswordDto: UpdateUserPasswordDto) {
-    return await this.userService.updatePassword(updatePasswordDto);
+  async updatePassword(@Body() passwordDto: UpdateUserPasswordDto) {
+    const res = await this.userService.updatePassword(passwordDto);
+
+    this.redisService.del(`update_password_captcha_${passwordDto.email}`);
+
+    return res;
   }
 
   @ApiQuery({
     name: 'address',
-    description: '用户邮箱',
-    example: 'xxxxxx@qq.com',
-    type: String,
-    required: true,
+    description: '邮箱地址',
+    type: String
   })
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: '验证码发送成功',
+    type: String,
+    description: '发送成功'
   })
   @Get('update_password/captcha')
-  async getUpdatePasswordCaptcha(@Query('address') address: string) {
-    const code = Math.random().toString().substring(2, 8);
-    await this.redisService.set(
-      `update_password_captcha_${address}`,
-      code,
-      60 * 5,
-    );
+  async updatePasswordCaptcha(@Query('address') address: string) {
+    const code = Math.random().toString().slice(2,8);
+
+    await this.redisService.set(`update_password_captcha_${address}`, code, 10 * 60);
+
     await this.emailService.sendMail({
       to: address,
-      subject: '密码重置验证码',
-      html: `<p>您的密码重置验证码为：${code}</p>`,
+      subject: '更改密码验证码',
+      html: `<p>你的更改密码验证码是 ${code}</p>`
     });
-    return '验证码发送成功';
+    return '发送成功';
   }
 
+  
   @ApiBearerAuth()
   @ApiBody({
-    type: UpdateUserDto,
+    type: UpdateUserDto
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: '验证码已失效/不正确',
+    description: '验证码已失效/不正确'
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: '用户信息更新成功',
+    description: '更新成功',
+    type: String
   })
   @Post(['update', 'admin/update'])
   @RequireLogin()
-  async update(
-    @UserInfo('userId') userId: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return await this.userService.update(userId, updateUserDto);
+  async update(@UserInfo('userId') userId: number, @Body() updateUserDto: UpdateUserDto) {
+    const res = await this.userService.update(userId, updateUserDto);
+    
+    this.redisService.del(`update_user_captcha_${updateUserDto.email}`);
+  
+    return  res;
   }
 
   @ApiBearerAuth()
   @ApiResponse({
-    status: HttpStatus.OK,
-    description: '验证码发送成功',
+    type: String,
+    description: '发送成功'
   })
+  @RequireLogin()
   @Get('update/captcha')
   async updateCaptcha(@UserInfo('email') address: string) {
-    const code = Math.random().toString().substring(2, 8);
-    await this.redisService.set(`update_captcha_${address}`, code, 60 * 10);
+    console.log(address);
+    const code = Math.random().toString().slice(2,8);
+
+    await this.redisService.set(`update_user_captcha_${address}`, code, 10 * 60);
+
     await this.emailService.sendMail({
       to: address,
-      subject: '用户信息更新验证码',
-      html: `<p>您的用户信息更新验证码为：${code}</p>`,
+      subject: '更改用户信息验证码',
+      html: `<p>你的验证码是 ${code}</p>`
     });
-    return '验证码发送成功';
+    return '发送成功';
   }
 
   @ApiBearerAuth()
   @ApiQuery({
     name: 'id',
-    description: '用户 id',
-    example: 1,
-    type: Number,
-    required: true,
+    description: 'userId',
+    type: Number
   })
   @ApiResponse({
     type: String,
-    description: 'success',
+    description: 'success'
   })
+  @RequireLogin()
   @Get('freeze')
   async freeze(@Query('id') userId: number) {
     await this.userService.freezeUserById(userId);
     return 'success';
   }
 
+
   @ApiBearerAuth()
   @ApiQuery({
     name: 'pageNo',
-    description: '页码',
-    example: 1,
-    type: Number,
-    required: false,
+    description: '第几页',
+    type: Number
   })
   @ApiQuery({
     name: 'pageSize',
-    description: '每页数量',
-    example: 10,
-    type: Number,
-    required: false,
+    description: '每页多少条',
+    type: Number
   })
   @ApiQuery({
     name: 'username',
     description: '用户名',
-    example: 'xxxxxx',
-    type: String,
-    required: false,
+    type: Number
   })
   @ApiQuery({
     name: 'nickName',
     description: '昵称',
-    example: 'xxxxxx',
-    type: String,
-    required: false,
+    type: Number
   })
   @ApiQuery({
     name: 'email',
-    description: '邮箱',
-    example: 'xxxxxx@qq.com',
-    type: String,
-    required: false,
+    description: '邮箱地址',
+    type: Number
   })
   @ApiResponse({
     type: UserListVo,
-    description: '用户列表',
+    description: '用户列表'
   })
   @RequireLogin()
   @Get('list')
   async list(
-    @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo'))
-    pageNo: number,
-    @Query(
-      'pageSize',
-      new DefaultValuePipe(10),
-      generateParseIntPipe('pageSize'),
-    )
-    pageSize: number,
+    @Query('pageNo', new DefaultValuePipe(1), generateParseIntPipe('pageNo')) pageNo: number,
+    @Query('pageSize', new DefaultValuePipe(2), generateParseIntPipe('pageSize')) pageSize: number,
     @Query('username') username: string,
     @Query('nickName') nickName: string,
-    @Query('email') email: string,
+    @Query('email') email: string
   ) {
-    return await this.userService.findUsersByPage(
-      pageNo,
-      pageSize,
-      username,
-      nickName,
-      email,
-    );
+    return await this.userService.findUsers(username, nickName, email, pageNo, pageSize);
   }
 
   @Post('upload')
-  @UseInterceptors(
-    FileInterceptor('file', {
+  @UseInterceptors(FileInterceptor('file', {
       dest: 'uploads',
       storage: storage,
       limits: {
-        fileSize: 3 * 1024 * 1024,
+        fileSize: 1024 * 1024 * 3
       },
       fileFilter(req, file, callback) {
-        const extname = path.extname(file.originalname);
-        if (['.jpg', '.jpeg', '.png', '.webp'].includes(extname)) {
+        const extname = path.extname(file.originalname);        
+        if(['.png', '.jpg', '.gif'].includes(extname)) {
           callback(null, true);
         } else {
           callback(new BadRequestException('只能上传图片'), false);
         }
-      },
-    }),
-  )
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    console.log(file);
-    return file.path;
+      }
+  }))
+  uploadFile(@UploadedFile() file: Express.Multer.File) {
+      console.log('file', file);
+      return file.path;
   }
 }

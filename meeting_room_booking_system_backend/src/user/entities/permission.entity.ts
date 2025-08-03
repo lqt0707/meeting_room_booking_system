@@ -1,21 +1,21 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({
-  name: 'permissions',
+    name: 'permissions'
 })
 export class Permission {
-  @PrimaryGeneratedColumn()
-  id: number;
+    @PrimaryGeneratedColumn()
+    id: number;
 
-  @Column({
-    length: 20,
-    comment: '权限代码',
-  })
-  code: string;
+    @Column({
+        length: 20,
+        comment: '权限代码'
+    })
+    code: string;
 
-  @Column({
-    length: 100,
-    comment: '权限描述',
-  })
-  description: string;
+    @Column({
+        length: 100,
+        comment: '权限描述'
+    })
+    description: string;
 }

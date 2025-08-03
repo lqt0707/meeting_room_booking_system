@@ -7,39 +7,39 @@ import { EntityManager } from 'typeorm';
 
 @Injectable()
 export class StatisticService {
-  @InjectEntityManager()
-  private entityManager: EntityManager;
 
-  async userBookingCount(startTime: string, endTime: string) {
-    const res = await this.entityManager
-      .createQueryBuilder(Booking, 'b')
-      .select('u.id', 'userId')
-      .addSelect('u.username', 'username')
-      .leftJoin(User, 'u', 'b.userId = u.id')
-      .addSelect('count(1)', 'bookingCount')
-      .where('b.startTime between :time1 and :time2', {
-        time1: startTime,
-        time2: endTime,
-      })
-      .groupBy('b.userId')
-      .getRawMany();
+    @InjectEntityManager()
+    private entityManager: EntityManager;
 
-    return res;
-  }
+    async userBookingCount(startTime: string, endTime: string) {
+        const res = await this.entityManager
+            .createQueryBuilder(Booking, 'b')
+            .select('u.id', 'userId')
+            .addSelect('u.username', 'username')
+            .leftJoin(User, 'u', 'b.userId = u.id')
+            .addSelect('count(1)', 'bookingCount')
+            .where('b.startTime between :time1 and :time2', {
+                time1: startTime, 
+                time2: endTime
+            })
+            .addGroupBy('b.user')
+            .getRawMany();
+        return res;
+    }
 
-  async meetingRoomUsedCount(startTime: string, endTime: string) {
-    const res = await this.entityManager
-      .createQueryBuilder(Booking, 'b')
-      .select('m.id', 'meetingRoomId')
-      .addSelect('m.name', 'meetingRoomName')
-      .addSelect('count(1)', 'usedCount')
-      .leftJoin(MeetingRoom, 'm', 'm.id = b.roomId')
-      .where('b.startTime between :time1 and :time2', {
-        time1: startTime,
-        time2: endTime,
-      })
-      .groupBy('b.roomId')
-      .getRawMany();
-    return res;
-  }
+    async meetingRoomUsedCount(startTime: string, endTime: string) {
+        const res = await this.entityManager
+            .createQueryBuilder(Booking, 'b')
+            .select('m.id', 'meetingRoomId')
+            .addSelect('m.name', 'meetingRoomName')
+            .leftJoin(MeetingRoom, 'm', 'b.roomId = m.id')
+            .addSelect('count(1)', 'usedCount')
+            .where('b.startTime between :time1 and :time2', {
+                time1: startTime, 
+                time2: endTime
+            })
+            .addGroupBy('b.roomId')
+            .getRawMany();
+        return res;
+    }
 }

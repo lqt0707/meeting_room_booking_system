@@ -5,8 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MeetingRoom } from './entities/meeting-room.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MeetingRoom])],
+  imports: [
+    TypeOrmModule.forFeature([MeetingRoom])
+  ],
   controllers: [MeetingRoomController],
-  providers: [MeetingRoomService],
+  providers: [MeetingRoomService]
 })
 export class MeetingRoomModule {}

@@ -1,51 +1,47 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Permission } from '../entities/permission.entity';
-import { Role } from '../entities/role.entity';
+import { ApiProperty } from "@nestjs/swagger";
 
 class UserInfo {
-  @ApiProperty()
-  id: number;
+    @ApiProperty()
+    id: number;
 
-  @ApiProperty({ example: 'zhangsan' })
-  username: string;
+    @ApiProperty({example: 'zhangsan'})
+    username: string;
 
-  @ApiProperty({ example: '张三' })
-  nickName: string;
+    @ApiProperty({example: '张三'})
+    nickName: string;
 
-  @ApiProperty({ example: 'zhangsan@example.com' })
-  email: string;
+    @ApiProperty({example: 'xx@xx.com'})
+    email: string;
 
-  @ApiProperty({ example: 'https://example.com/headPic.jpg' })
-  headPic: string;
+    @ApiProperty({example: 'xxx.png'})
+    headPic: string;
 
-  @ApiProperty({ example: '13800000000' })
-  phoneNumber: string;
+    @ApiProperty({example: '13233333333'})
+    phoneNumber: string;
 
-  @ApiProperty({ example: false })
-  isFrozen: boolean;
+    @ApiProperty()
+    isFrozen: boolean;
 
-  @ApiProperty({ example: false })
-  isAdmin: boolean;
+    @ApiProperty()
+    isAdmin: boolean;
 
-  @ApiProperty({ example: 1623456789000 })
-  createTime: number;
+    @ApiProperty()
+    createTime: number;
 
-  @ApiProperty({ example: ['管理员'] })
-  roles: string[];
+    @ApiProperty({example: ['管理员']})
+    roles: string[];
 
-  @ApiProperty({
-    example: [{ id: 1, description: '权限1', code: 'user:list' }],
-  })
-  permissions: Permission[];
+    @ApiProperty({example: 'query_aaa'})
+    permissions: string[]
 }
-
 export class LoginUserVo {
-  @ApiProperty({ type: UserInfo })
-  userInfo: UserInfo;
 
-  @ApiProperty({ example: 'accessToken' })
-  accessToken: string;
+    @ApiProperty()
+    userInfo: UserInfo;
 
-  @ApiProperty({ example: 'refreshToken' })
-  refreshToken: string;
+    @ApiProperty()
+    accessToken: string;
+
+    @ApiProperty()
+    refreshToken: string;
 }

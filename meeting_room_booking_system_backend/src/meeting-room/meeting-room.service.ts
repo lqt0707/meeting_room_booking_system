@@ -1,19 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateMeetingRoomDto } from './dto/create-meeting-room.dto';
 import { UpdateMeetingRoomDto } from './dto/update-meeting-room.dto';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { Like, Repository } from 'typeorm';
 import { MeetingRoom } from './entities/meeting-room.entity';
-import { EntityManager, Like, Repository } from 'typeorm';
-import { Booking } from 'src/booking/entities/booking.entity';
-import { MeetingRoomListVo } from './vo/meeting-room-list.vo';
+import { InjectRepository } from '@nestjs/typeorm';
 
 @Injectable()
 export class MeetingRoomService {
+
   @InjectRepository(MeetingRoom)
   private repository: Repository<MeetingRoom>;
-
-  @InjectEntityManager()
-  private entityManager: EntityManager;
 
   initData() {
     const room1 = new MeetingRoom();
@@ -34,94 +30,89 @@ export class MeetingRoomService {
     room3.equipment = '白板，电视';
     room3.location = '三层东';
 
-    this.repository.insert([room1, room2, room3]);
+    this.repository.insert([room1, room2, room3])
   }
 
-  async find(
-    pageNo: number,
-    pageSize: number,
-    name: string,
-    capacity: number,
-    equipment: string,
-  ) {
-    if (pageNo < 1) {
-      throw new BadRequestException('页码不能小于1');
+
+  async find(pageNo: number, pageSize: number, name: string, capacity: number, equipment: string) {
+    if(pageNo < 1) {
+      throw new BadRequestException('页码最小为 1');
     }
+    const skipCount = (pageNo - 1) * pageSize;
+
     const condition: Record<string, any> = {};
-    if (name) {
-      condition.name = Like(`%${name}%`);
+
+    if(name) {
+        condition.name = Like(`%${name}%`);   
     }
-    if (capacity) {
-      condition.capacity = Like(`%${capacity}%`);
+    if(equipment) {
+        condition.equipment = Like(`%${equipment}%`); 
     }
-    if (equipment) {
-      condition.equipment = Like(`%${equipment}%`);
+    if(capacity) {
+        condition.capacity = capacity;
     }
+
     const [meetingRooms, totalCount] = await this.repository.findAndCount({
-      skip: (pageNo - 1) * pageSize,
-      take: pageSize,
-      where: condition,
+        skip: skipCount,
+        take: pageSize,
+        where: condition
     });
 
-    const vo = new MeetingRoomListVo();
-    vo.meetingRooms = meetingRooms;
-    vo.totalCount = totalCount;
-    return vo;
-  }
-
-  async create(createMeetingRoomDto: CreateMeetingRoomDto) {
-    const room = await this.repository.findOneBy({
-      name: createMeetingRoomDto.name,
-    });
-    if (room) {
-      throw new BadRequestException('会议室名称已存在');
+    return {
+        meetingRooms,
+        totalCount
     }
-    return await this.repository.save(createMeetingRoomDto);
   }
 
-  async update(updateMeetingRoomDto: UpdateMeetingRoomDto) {
+  async create(meetingRoomDto: CreateMeetingRoomDto) {
     const room = await this.repository.findOneBy({
-      id: updateMeetingRoomDto.id,
+      name: meetingRoomDto.name
     });
-    if (!room) {
+
+    if(room) {
+      throw new BadRequestException('会议室名字已存在');
+    }
+
+    return await this.repository.save(meetingRoomDto);
+  }
+
+  async update(meetingRoomDto: UpdateMeetingRoomDto) {
+    const meetingRoom = await this.repository.findOneBy({
+      id: meetingRoomDto.id
+    })
+
+    if(!meetingRoom) {
       throw new BadRequestException('会议室不存在');
     }
-
-    room.capacity = updateMeetingRoomDto.capacity || room.capacity;
-    room.location = updateMeetingRoomDto.location || room.location;
-    room.name = updateMeetingRoomDto.name || room.name;
-
-    if (updateMeetingRoomDto.description) {
-      room.description = updateMeetingRoomDto.description;
+    
+    meetingRoom.capacity = meetingRoomDto.capacity;
+    meetingRoom.location = meetingRoomDto.location;
+    meetingRoom.name = meetingRoomDto.name;
+  
+    if(meetingRoomDto.description) {
+      meetingRoom.description = meetingRoomDto.description;
     }
-    if (updateMeetingRoomDto.equipment) {
-      room.equipment = updateMeetingRoomDto.equipment;
+    if(meetingRoomDto.equipment) {
+      meetingRoom.equipment = meetingRoomDto.equipment;
     }
-
-    await this.repository.update({ id: room.id }, room);
+  
+    await this.repository.update({
+      id: meetingRoom.id
+    } , meetingRoom);
     return 'success';
   }
 
   async findById(id: number) {
-    return await this.repository.findOneBy({ id });
+    return this.repository.findOneBy({
+      id
+    }); 
   }
 
-  /**
-   * 删除指定ID的会议室，删除前会先删除该会议室相关的所有预订记录
-   * @param id - 要删除的会议室的ID
-   * @returns 返回操作结果 'success'
-   */
   async delete(id: number) {
-    // 查询该会议室相关的所有预订记录
-    const bookings = await this.entityManager.findBy(Booking, {
-      room: { id: id },
+    await this.repository.delete({
+      id
     });
-    // 遍历预订记录，逐个删除
-    for (let i = 0; i < bookings.length; i++) {
-      await this.entityManager.delete(Booking, { id: bookings[i].id });
-    }
-    // 删除指定ID的会议室
-    await this.repository.delete({ id });
     return 'success';
   }
+
 }

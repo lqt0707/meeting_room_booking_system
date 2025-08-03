@@ -26,13 +26,9 @@ axiosInstance.interceptors.response.use(
         return response;
     },
     async (error) => {
-        if (!error.response) {
-            return Promise.reject(error);
-        }
-        
-        const { data, config } = error.response;
+        let { data, config } = error.response;
 
-        if (data?.code === 401 && !config?.url?.includes('/user/refresh')) {
+        if (data.code === 401 && !config.url.includes('/user/refresh')) {
             
             const res = await refreshToken();
 
@@ -47,7 +43,7 @@ axiosInstance.interceptors.response.use(
             }
             
         } else {
-            return Promise.reject(error);
+            return error.response;
         }
     }
 )

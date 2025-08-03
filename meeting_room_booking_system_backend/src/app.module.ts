@@ -1,19 +1,30 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Permission } from './user/entities/permission.entity';
+import { Role } from './user/entities/role.entity';
+import { User } from './user/entities/user.entity';
 import { UserModule } from './user/user.module';
 import { RedisModule } from './redis/redis.module';
 import { EmailModule } from './email/email.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
-import { LoginGuard } from './common/guards/login.guard';
-import { PermissionGuard } from './common/guards/permission.guard';
+import { LoginGuard } from './login.guard';
+import { PermissionGuard } from './permission.guard';
 import { MeetingRoomModule } from './meeting-room/meeting-room.module';
+import { MeetingRoom } from './meeting-room/entities/meeting-room.entity';
 import { BookingModule } from './booking/booking.module';
+import { Booking } from './booking/entities/booking.entity';
 import { StatisticModule } from './statistic/statistic.module';
+import { MinioModule } from './minio/minio.module';
+import { AuthModule } from './auth/auth.module';
 import * as path from 'path';
+import { WINSTON_MODULE_NEST_PROVIDER, WinstonLogger, WinstonModule, utilities } from 'nest-winston';
+import * as winston from 'winston';
+import { CustomTypeOrmLogger } from './CustomTypeOrmLogger';
+import 'winston-daily-rotate-file';
 
 @Module({
   imports: [
@@ -21,59 +32,85 @@ import * as path from 'path';
       global: true,
       useFactory(configService: ConfigService) {
         return {
-          secret: configService.get('JWT_SECRET'),
+          secret: configService.get('jwt_secret'),
           signOptions: {
-            expiresIn: configService.get('JWT_ACCESS_TOKEN_EXPIRES_TIME'),
-          },
-        };
+            expiresIn: '30m' // 默认 30 分钟
+          }
+        }
       },
-      inject: [ConfigService],
+      inject: [ConfigService]
     }),
+    UserModule, 
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: path.resolve(__dirname, '../.env'),
-      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      envFilePath: [ path.join(__dirname, '.env'), path.join(__dirname, '.dev.env')]
     }),
     TypeOrmModule.forRootAsync({
-      useFactory(configService: ConfigService) {
+      useFactory(configService: ConfigService, logger: WinstonLogger) {
         return {
-          type: 'mysql',
-          host: configService.get('MYSQL_HOST'),
-          port: configService.get('MYSQL_PORT'),
-          username: configService.get('MYSQL_USER'),
-          password: configService.get('MYSQL_PASSWORD'),
-          database: configService.get('MYSQL_DATABASE'),
-          logging: configService.get('MYSQL_LOGGING') === 'true',
-          poolSize: configService.get('MYSQL_POOL_SIZE') || 10,
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: configService.get('MYSQL_SYNCHRONIZE') === 'true' && process.env.NODE_ENV !== 'production',
+          type: "mysql",
+          host: configService.get('mysql_server_host'),
+          port: configService.get('mysql_server_port'),
+          username: configService.get('mysql_server_username'),
+          password: configService.get('mysql_server_password'),
+          database: configService.get('mysql_server_database'),
+          synchronize: false,
+          logging: true,
+          logger: new CustomTypeOrmLogger(logger),
+          entities: [
+            User, Role, Permission, MeetingRoom, Booking
+          ],
+          poolSize: 10,
           connectorPackage: 'mysql2',
           extra: {
-            authPlugin: 'sha256_password',
-            connectTimeout: configService.get('MYSQL_CONNECT_TIMEOUT') || 60000,
-            acquireTimeout: configService.get('MYSQL_ACQUIRE_TIMEOUT') || 60000,
-            timeout: 60000,
-            reconnect: true,
-            idleTimeout: configService.get('MYSQL_IDLE_TIMEOUT') || 300000,
-            enableKeepAlive: true,
-            keepAliveInitialDelay: 0,
-          },
-        };
+              authPlugin: 'sha256_password',
+          }
+        }
       },
-      inject: [ConfigService],
+      inject: [ConfigService, WINSTON_MODULE_NEST_PROVIDER]
     }),
-    UserModule,
-    RedisModule,
-    EmailModule,
-    MeetingRoomModule,
-    BookingModule,
-    StatisticModule,
+    WinstonModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        level: 'debug',
+        transports: [
+          // new winston.transports.File({
+          //   filename: `${process.cwd()}/log`,
+          // }),
+          new winston.transports.DailyRotateFile({
+              level: configService.get('winston_log_level'),
+              dirname: configService.get('winston_log_dirname'),
+              filename: configService.get('winston_log_filename'),
+              datePattern: configService.get('winston_log_date_pattern'),
+              maxSize: configService.get('winston_log_max_size')
+          }),
+          new winston.transports.Console({
+            format: winston.format.combine(
+              winston.format.timestamp(),
+              utilities.format.nestLike(),
+            ),
+          }),
+          new winston.transports.Http({
+              host: 'localhost',
+              port: 3002,
+              path: '/log'
+          })
+        ],
+      }),
+      inject: [ConfigService]
+    }),
+    RedisModule, EmailModule, MeetingRoomModule, BookingModule, StatisticModule, MinioModule, AuthModule
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    { provide: APP_GUARD, useClass: LoginGuard },
-    { provide: APP_GUARD, useClass: PermissionGuard },
-  ],
+    {
+      provide: APP_GUARD,
+      useClass: LoginGuard
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionGuard
+    }
+  ]
 })
 export class AppModule {}

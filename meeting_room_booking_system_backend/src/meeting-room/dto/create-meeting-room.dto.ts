@@ -1,43 +1,44 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, MaxLength } from 'class-validator';
+import { ApiProperty } from "@nestjs/swagger";
+import { IsEmpty, IsNotEmpty, MaxLength, MinLength } from "class-validator";
 
 export class CreateMeetingRoomDto {
-  @ApiProperty({
-    description: '会议室名称',
-    type: String,
-  })
-  @IsNotEmpty({ message: '会议室名称不能为空' })
-  @MaxLength(10, { message: '会议室名称不能超过10个字符' })
-  name: string;
 
-  @ApiProperty({
-    description: '会议室容量',
-    type: Number,
-  })
-  @IsNotEmpty({ message: '会议室容量不能为空' })
-  capacity: number;
+    @ApiProperty()
+    @IsNotEmpty({
+        message: '会议室名称不能为空'
+    })
+    @MaxLength(10, {
+        message: '会议室名称最长为 10 字符'
+    })
+    name: string;
 
-  @ApiProperty({
-    description: '会议室位置',
-    type: String,
-  })
-  @IsNotEmpty({ message: '会议室位置不能为空' })
-  @MaxLength(50, { message: '会议室位置不能超过50个字符' })
-  location: string;
+    @ApiProperty()
+    @IsNotEmpty({
+        message: '容量不能为空'
+    })
+    capacity: number;
 
-  @ApiProperty({
-    description: '会议室设备',
-    type: String,
-  })
-  @IsNotEmpty({ message: '会议室设备不能为空' })
-  @MaxLength(50, { message: '会议室设备不能超过50个字符' })
-  equipment: string;
+    @ApiProperty()
+    @IsNotEmpty({
+        message: '位置不能为空'
+    })
+    @MaxLength(50, {
+        message: '位置最长为 50 字符'
+    })
+    location: string;
 
-  @ApiProperty({
-    description: '会议室描述',
-    type: String,
-  })
-  @IsNotEmpty({ message: '会议室描述不能为空' })
-  @MaxLength(100, { message: '会议室描述不能超过100个字符' })
-  description: string;
+    @ApiProperty()
+    @IsNotEmpty()
+    @MaxLength(50, {
+        message: '设备最长为 50 字符'
+    })
+    equipment: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @MaxLength(100, {
+        message: '描述最长为 100 字符',  
+    })
+    description: string;
+
 }

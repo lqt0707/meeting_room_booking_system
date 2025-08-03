@@ -32,23 +32,15 @@ export function Register() {
         if(values.password !== values.confirmPassword) {
             return message.error('两次密码不一致');
         }
-        try {
-            const res = await register(values);
-        
-            if(res.status === 201 || res.status === 200) {
-                message.success('注册成功');
-                setTimeout(() => {
-                    navigate('/login');
-                }, 1500);
-            } else {
-                message.error(res.data.data || '系统繁忙，请稍后再试');
-            }
-        } catch (error: any) {
-            if (error.response && error.response.data) {
-                message.error(error.response.data.message || error.response.data.data || '注册失败');
-            } else {
-                message.error('网络连接失败，请检查网络');
-            }
+        const res = await register(values);
+    
+        if(res.status === 201 || res.status === 200) {
+            message.success('注册成功');
+            setTimeout(() => {
+                navigate('/login');
+            }, 1500);
+        } else {
+            message.error(res.data.data || '系统繁忙，请稍后再试');
         }
     }
 
@@ -58,19 +50,11 @@ export function Register() {
             return message.error('请输入邮箱地址');
         }
 
-        try {
-            const res = await registerCaptcha(address);
-            if(res.status === 201 || res.status === 200) {
-                message.success(res.data.data);
-            } else {
-                message.error(res.data.data ||'系统繁忙，请稍后再试');
-            }
-        } catch (error: any) {
-            if (error.response && error.response.data) {
-                message.error(error.response.data.message || error.response.data.data || '发送验证码失败');
-            } else {
-                message.error('网络连接失败，请检查网络');
-            }
+        const res = await registerCaptcha(address);
+        if(res.status === 201 || res.status === 200) {
+            message.success(res.data.data);
+        } else {
+            message.error(res.data.data ||'系统繁忙，请稍后再试');
         }
     }
     
