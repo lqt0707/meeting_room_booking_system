@@ -18,6 +18,7 @@ FROM nginx:stable as production-stage
 
 COPY --from=build-stage /app/build /usr/share/nginx/html
 
+# 使用用户端专用的nginx配置（如果有的话）
 COPY --from=build-stage /app/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
